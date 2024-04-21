@@ -42,6 +42,20 @@ pub fn read_config() -> Option<Config> {
                 separator: Some(",".to_string()),
                 lang_tag: Some("ja".to_string()),
             },
+            Fallback{
+                base_url: "https://www.spanishdict.com/translate/".to_string(),
+                start_tag: "langFrom=en\" class=\"MhZ0VHvJ\">".to_string(),
+                all_matches: false,
+                separator: None,
+                lang_tag: Some("es".to_string()),
+            },
+            Fallback{
+                base_url: "https://en.langenscheidt.com/german-english/".to_string(),
+                start_tag: "<span class=\"btn-inner\">".to_string(),
+                all_matches: true,
+                separator: None,
+                lang_tag: Some("de".to_string())
+            }
         ],
     };
 
