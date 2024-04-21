@@ -746,3 +746,463 @@ please
 おちゃ
 
 green teas, green tea, tea
+
+
+
+// Spanish
+demasiado
+
+too
+regalo
+
+gift
+cinturón
+
+belt
+reloj
+
+watch, clock
+favorita
+
+favorite
+cómoda
+
+dresser, comfortable, convenient
+cartera
+
+purse, bag, wallet
+diferente
+
+different
+abrigo
+
+coat
+caro
+
+expensive
+ese
+
+that
+barato
+
+cheap
+falda
+
+skirt
+rojo
+
+red
+este
+
+this
+comprar
+
+to buy
+sombrero
+
+hat
+gris
+
+gray, grey
+camiseta
+
+T-shirt
+vestido
+
+dress
+marrón
+
+brown
+camisa
+
+shirt, blouse, top
+ropa
+
+clothes
+tienda
+
+store
+chaqueta
+
+jacket
+azul
+
+blue
+verde
+
+green
+y
+
+and
+hijo
+
+son
+interesante
+
+interesting
+tienes
+
+have, are, there's
+hija
+
+daughter
+bicicleta
+
+bicycle
+vivo
+
+alive, brighter, live
+abuela
+
+grandmother
+familia
+
+family
+perfecto
+
+perfect
+abuelo
+
+grandfather
+apartamento
+
+apartment
+esposo
+
+husband
+esposa
+
+wife
+perro
+
+dog
+hermano
+
+brother
+bonito
+
+pretty
+muy
+
+very
+gato
+
+cat
+hermana
+
+sister
+grande
+
+big
+casa
+
+house
+carro
+
+car, automobile
+padre
+
+father, dad
+elegante
+
+elegant
+tiene
+
+is, has got, makes
+inteligente
+
+intelligent
+madre
+
+mother
+o
+
+or
+pagar
+
+to pay
+ensalada
+
+salad
+tomate
+
+tomato
+quiero
+
+mean, (I) love, (I) want
+cuenta
+
+check
+sal
+
+salt
+taza
+
+cup, mug
+naranja
+
+orange
+café
+
+coffee
+vaso
+
+glass
+jugo
+
+juice
+sin
+
+absent, without, with no
+azúcar
+
+sugar
+carne
+
+meat, pork, beef
+queso
+
+cheese
+pescado
+
+fish
+de
+
+with, made of, off
+con
+
+with
+sándwich
+
+sandwich, sandwiches
+hamburguesa
+
+burger, hamburger
+dos
+
+two
+para
+
+for
+personas
+
+people
+mesa
+
+table
+restaurante
+
+restaurant
+uno
+
+one
+tres
+
+three
+supermercado
+
+supermarket
+cerrado
+
+closed
+banco
+
+bank, banks
+calle
+
+street
+baño
+
+bathroom
+hospital
+
+hospital, hospitals
+museo
+
+museum, museums
+tu
+
+your
+tren
+
+train
+autobús
+
+bus
+aeropuerto
+
+airport
+boleto
+
+ticket
+a
+
+to, with, away
+dinero
+
+money
+dónde
+
+where
+reserva
+
+reservation
+tengo
+
+I've got, is there, I'm having
+está
+
+it is
+aquí
+
+here
+hotel
+
+hotel, hotels
+en
+
+in
+maleta
+
+suitcase
+pasaporte
+
+passport
+mi
+
+my
+teléfono
+
+phone
+necesito
+
+need, (I) need, (?) do I need
+taxi
+
+taxi, cab
+español
+
+Spanish, Spaniard, Spanish man
+hablo
+
+(I) am talking, speak, talking
+hablas
+
+(?) do you speak, speak, talking
+disculpe
+
+excuse me, excuse!, (I/he/she/it/you) excuse
+inglés
+
+English, British, Englishman
+no
+
+do not, wasn't, n't
+sí
+
+yes, yourself
+por favor
+
+please
+de nada
+
+you're welcome, you are welcome
+perdón
+
+sorry, excuse me, pardon
+lo siento
+
+sorry, I am sorry
+adiós
+
+goodbye
+mucho gusto
+
+nice to meet you, so nice to meet you
+buenos días
+
+good morning
+gracias
+
+thanks, thank you, party piece
+hola
+
+hello, hi
+buenas noches
+
+good night, good evening
+bebes
+
+(?) do you drink, (you) drink, drink
+agua
+
+water
+como
+
+(I) eat, (I) am eating, like
+bebo
+
+(I) drink, (I) am drinking, drink
+leche
+
+milk
+pan
+
+bread, bar, cake
+bebe
+
+(he) is drinking, (you) are drinking, (he) drinks
+comes
+
+ate, (you) are eating, (?) do you eat
+es
+
+is, are you, it's
+ella
+
+she, her, she'll
+eres
+
+you're, aren't being, (?) are you
+él
+
+he, him, it
+tú
+
+you, you'll
+come
+
+(it) eats, (?) do you eat, (she) eats
+manzana
+
+apple, block
+soy
+
+I am, am
+niño
+
+boy, child, kid
+hombre
+
+man, bloke, guy
+una
+
+a, an, one
+yo
+
+I, me
+la
+
+the, your, her
+niña
+
+girl, child, daughter
+un
+
+a, an, one
+el
+
+the, your, her
+mujer
+
+woman, wife, lady

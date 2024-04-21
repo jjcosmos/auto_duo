@@ -27,7 +27,10 @@ async fn main() -> WebDriverResult<()> {
     let driver = WebDriver::new("http://localhost:4444", caps).await?;
 
     // Do the actual duo
-    let _ = duo_read(&driver, &config).await;
+    match duo_read(&driver, &config).await {
+        Ok(_) => {},
+        Err(e) => {eprintln!("{}", e)},
+    };
 
     // Close everything
     driver.quit().await?;
@@ -217,6 +220,7 @@ async fn query_and_click_set(
     let mut buttons_jp = vec![];
 
     let query = driver.query(By::ClassName("notranslate"));
+    let mut lang_tag = String::new();
 
     for q in query.any().await? {
         if !q.is_present().await? {
@@ -240,6 +244,7 @@ async fn query_and_click_set(
         if !is_en {
             japanese.push(text);
             buttons_jp.push(q);
+            lang_tag = tag;
         } else {
             english.push(text);
             buttons_en.push(q);
@@ -249,7 +254,7 @@ async fn query_and_click_set(
     assert_eq!(english.len(), japanese.len());
 
     for jp_tl in &japanese {
-        let res = get_match_multi(&jp_tl, &english, &text_dict, &config).await?;
+        let res = get_match_multi(&jp_tl, &english, &text_dict, &config, &lang_tag).await?;
         match res {
             Some(en_tl) => {
                 println!("Found match for jp: {} en: {}", jp_tl, en_tl);
@@ -288,6 +293,7 @@ async fn get_match_multi(
     en_options: &Vec<String>,
     text_dict: &HashMap<String, Vec<String>>,
     config: &Config,
+    lang_tag: &str,
 ) -> Result<Option<String>, Error> {
     // First, check if it is in the wordlist provided in words.txt.
     // This is the fastest and most reliable, especially in languages with the standart character set
@@ -313,12 +319,18 @@ async fn get_match_multi(
 
     // Next, iterate through all the fallbacks provided in the config in order, returning on the first success
     for fallback in &config.fallbacks {
+        // Check if this fallback is exclusive to a language
+        match &fallback.lang_tag {
+            Some(tag) => if tag != lang_tag {continue;},
+            None => {},
+        }
+
         match get_match_extended(
             en_options,
             &fallback.base_url,
             jp,
             &fallback.start_tag,
-            &fallback.separator.clone().unwrap_or_default(),
+            fallback.separator.clone().as_deref(),
         )
         .await
         {
@@ -342,16 +354,24 @@ async fn get_match_extended(
     site_root: &str,
     search_term: &str,
     start_tag: &str,
-    split_pattern: &str,
+    split_pattern: Option<&str>,
 ) -> Result<Option<String>, Error> {
     eprintln!("Falling back to {} for {}...", &site_root, &search_term);
 
     let frmt = format!("{}{}", site_root, search_term);
-    let response = reqwest::get(frmt).await?.text().await?;
+    let response = reqwest::get(&frmt).await?.text().await?;
 
-    let t = response
-        .find(start_tag)
-        .expect("Did not find matching tag. Check your config.json against the site's html");
+    let t;
+
+    let potential_found = response.find(start_tag);
+    match potential_found {
+        Some(found) => t = found,
+        None => {
+            eprintln!("Did not find tag {} from url {}. {} bytes checked", &start_tag, &frmt, response.as_bytes().len());
+            return Ok(None)
+        }, // Maybe not a valid url, but not necessarily the end
+    };
+
     let start_byte = t + start_tag.bytes().len();
 
     let as_bytes = response.as_bytes();
@@ -371,8 +391,14 @@ async fn get_match_extended(
 
     let vec: Vec<u8> = tl_content.iter().map(|b| **b).collect();
     let str = std::str::from_utf8(&vec.as_slice()).expect("Could not convert bytes to str");
-    let splits = str.split(split_pattern);
-    for s in splits.clone() {
+
+    let splits =
+    match split_pattern {
+        Some(patt) => str.split(patt).collect(),
+        None => vec![str],
+    };
+
+    for s in &splits {
         let trimmed = s.trim().to_lowercase();
 
         for en in en_options {
