@@ -1,0 +1,748 @@
+// Copied straight from https://www.duolingo.com/practice-hub/words
+// The parser ignores comments and blank lines, so no need to try and make it pretty
+// This file does need to exits even if you only want to use fallbacks, just leave it blank
+
+ながい
+
+long
+時間
+
+hour
+しゅうてん
+
+final stop
+分
+
+minute, minutes
+ぐらい
+
+about
+はやい
+
+fast
+十分
+
+sufficient, enough, adequate
+つぎ
+
+next
+バス
+
+bus
+でんしゃ
+
+train
+つくえ
+
+desk
+れいぞうこ
+
+fridge
+テーブル
+
+table, tables
+たぶん
+
+probably
+せまい
+
+cramped
+キッチン
+
+kitchen
+ひろい
+
+spacious
+いえ
+
+house
+コメディ
+
+comedy
+アクション
+
+action
+ファンタジー
+
+fantasy
+ミステリー
+
+mystery
+Kポップ
+
+K-pop
+ベトナム
+
+Vietnam
+エリカ
+
+Erica, Erika
+パスタ
+
+pasta
+あした
+
+tomorrow
+らいしゅう
+
+next week
+バレーボール
+
+volleyball
+まいしゅう
+
+every week
+四時
+
+four o'clock
+何時に
+
+(at) what time
+新聞
+
+newspaper
+ラジオ
+
+radio, radios, (the) radio
+でぐち
+
+exit
+ちかい
+
+close
+カフェ
+
+cafe
+かいだん
+
+stairs
+コンセント
+
+outlet
+とおい
+
+far
+でんわ
+
+phone
+タクシー
+
+taxi
+エレベーター
+
+elevator
+おてあらい
+
+restroom
+ゴミばこ
+
+trash can
+のりかえ
+
+transfer
+あそこ
+
+over there
+かいさつ
+
+ticket gate
+ホーム
+
+platform
+どうが
+
+video
+じゅうどう
+
+judo
+テニス
+
+tennis
+日曜日
+
+Sunday
+ゲーム
+
+video games
+からて
+
+karate
+土曜日
+
+Saturday, Saturdays
+スポーツ
+
+sports
+ヨガ
+
+yoga
+ともだち
+
+friend, friends
+ドラマ
+
+drama
+しゅうまつ
+
+weekend
+アイスコーヒー
+
+iced coffee
+こうちゃ
+
+black teas, black tea, tea
+小さい
+
+small
+すこし
+
+a bit
+サラダ
+
+salad, salads
+そば
+
+soba
+大きい
+
+big
+おにぎり
+
+rice balls, rice ball, onigiri
+ふたつ
+
+two
+あ
+
+ah, oh
+ひとつ
+
+one
+水
+
+water
+レストラン
+
+restaurant
+うどん
+
+udon
+てんぷら
+
+tempura
+ジャケット
+
+jacket
+たかい
+
+expensive, big, tall
+くろい
+
+black
+みせ
+
+store
+千
+
+thousand
+いくら
+
+how much
+ネクタイ
+
+tie, necktie, ties
+えん
+
+yen
+やすい
+
+cheap, inexpensive
+百
+
+hundred
+あの
+
+those, ah, that (over there)
+あおい
+
+blue
+いい
+
+good, like, well
+ドレス
+
+dress
+スカート
+
+skirt
+新しい
+
+new
+Tシャツ
+
+t-shirt
+ね
+
+isn't it?
+ふく
+
+clothes
+ダサい
+
+hideous
+さいふ
+
+wallet
+古い
+
+old
+ばんごはん
+
+dinner
+まいばん
+
+every night
+九時
+
+nine o'clock
+半
+
+thirty
+八
+
+eight
+べんとう
+
+boxed lunch
+ひるごはん
+
+lunch
+十二
+
+twelve
+十
+
+ten
+十一
+
+eleven
+あさごはん
+
+breakfast
+七時
+
+seven o'clock
+時
+
+o'clock
+たべます
+
+eats
+コーヒー
+
+coffee
+まいあさ
+
+every morning
+ジュース
+
+juice
+まいにち
+
+every day
+パン
+
+bread
+サンドイッチ
+
+sandwich
+Jポップ
+
+J-pop
+まんが
+
+manga
+アニメ
+
+anime
+やきゅう
+
+baseball
+します
+
+plays
+ざっし
+
+magazines
+本
+
+books
+ニュース
+
+news
+おんがく
+
+music
+ロック
+
+rock
+ジャズ
+
+jazz
+サッカー
+
+soccer
+ときどき
+
+sometimes
+バスケットボール
+
+basketball
+を
+
+through, with, for
+よく
+
+often
+えいが
+
+movies
+テレビ
+
+TV
+おっと
+
+my husband
+七
+
+7, seven, seventh
+あたまがいい
+
+smart
+むすこ
+
+my son
+むすめ
+
+my daughter
+六
+
+six
+つま
+
+my wife
+だいがくせい
+
+college student
+ゆうめい
+
+famous
+かんごし
+
+nurse
+おとうと
+
+my younger brother
+うるさい
+
+noisy
+五
+
+5, five
+あに
+
+my older brother
+かいしゃいん
+
+office worker
+あね
+
+my older sister
+四
+
+four
+いもうと
+
+my younger sister
+さい
+
+years old
+いそがしい
+
+busy
+エンジニア
+
+engineer
+父
+
+dad
+かぞく
+
+family
+母
+
+mom, mother, my mom
+まち
+
+town, wait, city
+とても
+
+very
+きれい
+
+clean
+しずか
+
+quiet
+にぎやか
+
+lively
+とし
+
+years, cities, city
+日本
+
+Japan, Japanese
+おおさか
+
+Osaka
+京都
+
+Kyoto
+ニューヨーク
+
+New York
+も
+
+even, any, also
+私
+
+I
+ようこそ
+
+welcome
+おはようございます
+
+good morning
+かばん
+
+bag
+田中
+
+Tanaka
+パスポート
+
+passport
+の
+
+for, one, of
+スマホ
+
+smartphone
+ちず
+
+map
+きっぷ
+
+ticket
+ちかてつ
+
+subway
+くうこう
+
+airport
+すみません
+
+excuse me
+いま
+
+now, current
+一
+
+one, an, a
+二
+
+two, 2
+三
+
+3, three, third
+じ
+
+o'clock
+に
+
+to, in, as (a)
+いち
+
+one, an
+おもしろい
+
+interesting, fun, funny
+その
+
+the, that, its
+かわいい
+
+cuter, cute, pretty
+この
+
+this, these
+くつ
+
+shoes, shoe
+しろい
+
+white
+コート
+
+coat
+あかい
+
+red
+ぼうし
+
+hat, hats
+そこ
+
+there
+だいがく
+
+university, college
+えき
+
+station, train station, stations
+デパート
+
+department store
+ここ
+
+here
+バスてい
+
+bus stop
+ホテル
+
+hotel
+コンビニ
+
+convenience store
+どこ
+
+where
+ブラジルじん
+
+Brazilian
+イギリスじん
+
+British
+ブラジル
+
+Brazil
+イギリス
+
+Britain, the United Kingdom, British
+にほんじん
+
+Japanese
+カナダ
+
+Canada
+アメリカじん
+
+American
+カナダじん
+
+Canadian
+アメリカ
+
+America, the USA, the US
+ちいさい
+
+small, little
+にほん
+
+Japan
+おおきい
+
+big, large
+か
+
+or, is it?, that
+いいえ
+
+no
+はい
+
+yes
+ケーキ
+
+cake
+ピザ
+
+pizza
+それ
+
+that (one), it, that
+これ
+
+this (one), these, this
+ラーメン
+
+ramen
+おいしい
+
+good, delicious, tasty
+は
+
+is, with, regarding
+カレー
+
+curry
+じゃあね
+
+bye
+さん
+
+Mr., Miss, Mrs.
+こんにちは
+
+hello
+がくせい
+
+student, students
+ひと
+
+person, people
+かっこいい
+
+cool, good-looking, stylish
+べんごし
+
+lawyer, lawyers
+やさしい
+
+kind, easy, nice
+せんせい
+
+teacher, Professor, teachers
+いしゃ
+
+doctor, doctors
+と
+
+and, that, door
+みず
+
+water, waters
+ごはん
+
+rice, meal, meals
+すし
+
+sushi
+ください
+
+please
+おちゃ
+
+green teas, green tea, tea
