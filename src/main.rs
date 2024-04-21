@@ -16,8 +16,12 @@ struct CrashGuard(Child);
 impl Drop for CrashGuard {
     fn drop(&mut self) {
         match self.0.kill() {
-            Ok(_) => {println!("Killed child process on drop")},
-            Err(e) => {eprintln!("Could not kill child process on drop: {}", e)},
+            Ok(_) => {
+                println!("Killed child process on drop")
+            }
+            Err(e) => {
+                eprintln!("Could not kill child process on drop: {}", e)
+            }
         }
     }
 }
@@ -31,7 +35,6 @@ async fn main() -> WebDriverResult<()> {
         .spawn()
         .unwrap();
 
-        
     let id = gecko.id();
     println!("Started gecko with PID {}", id);
 
@@ -225,7 +228,11 @@ async fn duo_read(driver: &WebDriver, config: &Config) -> WebDriverResult<()> {
 }
 
 #[allow(dead_code)]
-async fn nav_to_lang(driver: &WebDriver, config: &Config, lang_full_name: &str) -> WebDriverResult<()> {
+async fn nav_to_lang(
+    driver: &WebDriver,
+    config: &Config,
+    lang_full_name: &str,
+) -> WebDriverResult<()> {
     let secret_key = "jwt_token";
     let secret_value = &config.jwt;
 
@@ -241,7 +248,11 @@ async fn nav_to_lang(driver: &WebDriver, config: &Config, lang_full_name: &str) 
     sleep(Duration::from_secs(5)).await;
 
     let lang_select = driver.find(By::Css("._3TvKV")).await?;
-    driver.action_chain().move_to_element_center(&lang_select).perform().await?;
+    driver
+        .action_chain()
+        .move_to_element_center(&lang_select)
+        .perform()
+        .await?;
 
     sleep(Duration::from_secs(1)).await;
 
@@ -264,8 +275,11 @@ async fn nav_to_lang(driver: &WebDriver, config: &Config, lang_full_name: &str) 
             let text = canditate.text().await.unwrap_or("NONE".to_string());
             texts.push(text);
         }
-        let err_txt = format!("Could not find match for {} in {:?}", &lang_full_name, texts);
-        return Err(WebDriverError::FatalError(err_txt))
+        let err_txt = format!(
+            "Could not find match for {} in {:?}",
+            &lang_full_name, texts
+        );
+        return Err(WebDriverError::FatalError(err_txt));
     }
 
     sleep(Duration::from_secs(5)).await;
@@ -325,7 +339,7 @@ async fn query_and_click_set(
         let res = get_match_multi(&jp_tl, &english, &text_dict, &config, &lang_tag).await?;
         match res {
             Some(en_tl) => {
-                println!("Found match for jp: {} en: {}", jp_tl, en_tl);
+                println!("Found match for target lang: {} en: {}", jp_tl, en_tl);
                 let index_of_en = english
                     .iter()
                     .position(|en_str| *en_str == en_tl)
@@ -403,6 +417,7 @@ async fn get_match_multi(
             jp,
             &fallback.start_tag,
             fallback.separator.clone().as_deref(),
+            fallback.all_matches,
         )
         .await
         {
@@ -427,6 +442,7 @@ async fn get_match_extended(
     search_term: &str,
     start_tag: &str,
     split_pattern: Option<&str>,
+    all_matches: bool,
 ) -> Result<Option<String>, Error> {
     eprintln!("Falling back to {} for {}...", &site_root, &search_term);
 
@@ -434,7 +450,6 @@ async fn get_match_extended(
     let response = reqwest::get(&frmt).await?.text().await?;
 
     let t;
-
     let potential_found = response.find(start_tag);
     match potential_found {
         Some(found) => t = found,
@@ -450,57 +465,80 @@ async fn get_match_extended(
     };
 
     let start_byte = t + start_tag.bytes().len();
-
-    let as_bytes = response.as_bytes();
-
-    // Read until closing tag
+    //let as_bytes = response.as_bytes();
     let mut byte_index = start_byte;
-    let mut tl_content = vec![];
+
     loop {
-        let byte = as_bytes.get(byte_index).unwrap();
-        if *byte == '<' as u8 {
+
+        // Read until closing tag
+        /*
+        let mut tl_content = vec![];
+        loop {
+            let byte = as_bytes.get(byte_index).unwrap();
+            if *byte == '<' as u8 {
+                break;
+            }
+
+            tl_content.push(byte);
+            byte_index += 1;
+        }
+         */
+
+        //let vec: Vec<u8> = tl_content.iter().map(|b| **b).collect();
+        //let str = std::str::from_utf8(&vec.as_slice()).expect("Could not convert bytes to str");
+
+        let end_byte = byte_index + response[start_byte..].find("<").unwrap();
+        let slice = &response[byte_index..end_byte];
+
+        byte_index += slice.len();
+
+        let splits = match split_pattern {
+            Some(patt) => slice.split(patt).collect(),
+            None => vec![slice],
+        };
+
+        for s in &splits {
+            let trimmed = s.trim().to_lowercase();
+
+            for en in en_options {
+                let mut lower = en.trim().to_lowercase();
+
+                // remove plural from english button option. TODO: kinda jank
+                if lower.ends_with("s") {
+                    lower = lower[0..lower.len() - 1].to_string();
+                }
+
+                if trimmed.contains(&lower) {
+                    return Ok(Some(en.to_owned()));
+                }
+            }
+        }
+
+        let easy: Vec<&str> = splits.into_iter().map(|s| s).collect();
+        eprintln!("Splits do not match! target: {} en: {:?}", search_term, easy);
+
+        // In the event of matching tags with garbage data, just call it quits.
+        if !all_matches {
             break;
         }
 
-        tl_content.push(byte);
-        byte_index += 1;
-    }
-
-    let vec: Vec<u8> = tl_content.iter().map(|b| **b).collect();
-    let str = std::str::from_utf8(&vec.as_slice()).expect("Could not convert bytes to str");
-
-    let splits = match split_pattern {
-        Some(patt) => str.split(patt).collect(),
-        None => vec![str],
-    };
-
-    for s in &splits {
-        let trimmed = s.trim().to_lowercase();
-
-        for en in en_options {
-            let mut lower = en.trim().to_lowercase();
-
-            // remove plural from english button option. TODO: kinda jank
-            if lower.ends_with("s") {
-                lower = lower[0..lower.len() - 1].to_string();
-            }
-
-            if trimmed.contains(&lower) {
-                return Ok(Some(en.to_owned()));
-            }
+        // Otherwise, move byte index to next occurence
+        // Important to remember that find is the index in the SLICE, not the source collection...
+        match response[byte_index..].find(start_tag) {
+            Some(found_index) => {
+                byte_index = byte_index + found_index + start_tag.bytes().len();
+            },
+            None => {break;},
         }
     }
-
-    let easy: Vec<&str> = splits.into_iter().map(|s| s).collect();
-    eprintln!("Splits do not match! jp: {} en: {:?}", search_term, easy);
 
     return Ok(None);
 }
 
 #[cfg(test)]
 mod tests {
-    use serial_test::serial;
     use super::*;
+    use serial_test::serial;
 
     const START_DELAY: u64 = 2;
 
@@ -579,7 +617,7 @@ mod tests {
 
     #[tokio::test]
     #[serial]
-    async fn change_language_test(){
+    async fn change_language_test() {
         sleep(Duration::from_secs(START_DELAY)).await;
 
         let config = config::read_config().unwrap();

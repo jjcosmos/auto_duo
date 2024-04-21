@@ -1206,3 +1206,54 @@ the, your, her
 mujer
 
 woman, wife, lady
+
+// German
+
+ja
+
+yes
+Bier
+
+beer
+oder
+
+or
+tschüss
+
+bye
+nein
+
+no
+danke
+
+thank you
+Wasser
+
+water
+Brot
+
+bread
+Wein
+
+wine
+Tee
+
+tea
+hallo
+
+hello
+Kaffee
+
+coffee
+bitte
+
+please
+Milch
+
+milk
+a
+
+A, ≅ M
+und
+
+and

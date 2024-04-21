@@ -16,6 +16,7 @@ pub struct Config {
 pub struct Fallback {
     pub base_url: String,
     pub start_tag: String,
+    pub all_matches: bool,
     pub separator: Option<String>,
     pub lang_tag: Option<String>,
 }
@@ -30,12 +31,14 @@ pub fn read_config() -> Option<Config> {
             Fallback {
                 base_url: "https://jisho.org/search/".to_string(),
                 start_tag: r#"<span class="meaning-meaning">"#.to_string(),
+                all_matches: false,
                 separator: Some(";".to_string()),
                 lang_tag: Some("ja".to_string()),
             },
             Fallback {
                 base_url: "https://www.romajidesu.com/translator/".to_string(),
                 start_tag: r#"<div class="res_translated" id="res_english">"#.to_string(),
+                all_matches: false,
                 separator: None,
                 lang_tag: Some("ja".to_string()),
             },
