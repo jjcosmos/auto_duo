@@ -1,23 +1,37 @@
 use config::Config;
 use reqwest::Error;
+
 use std::{
     collections::{HashMap, HashSet},
     fs,
     io::{BufRead, BufReader},
-    process::Command,
+    process::{Child, Command},
     time::Duration,
 };
 use thirtyfour::{prelude::*, support::sleep};
 mod config;
 
+struct CrashGuard(Child);
+
+impl Drop for CrashGuard {
+    fn drop(&mut self) {
+        match self.0.kill() {
+            Ok(_) => {println!("Killed child process on drop")},
+            Err(e) => {eprintln!("Could not kill child process on drop: {}", e)},
+        }
+    }
+}
+
 #[tokio::main]
 async fn main() -> WebDriverResult<()> {
     let config = config::read_config().unwrap();
 
-    let mut gecko = Command::new("cmd")
+    let gecko = Command::new("cmd")
         .args(&["/C", "start", &config.driver_path])
         .spawn()
         .unwrap();
+
+        
     let id = gecko.id();
     println!("Started gecko with PID {}", id);
 
@@ -26,15 +40,19 @@ async fn main() -> WebDriverResult<()> {
     caps.set_firefox_binary(&config.firefox_exe_path).unwrap();
     let driver = WebDriver::new("http://localhost:4444", caps).await?;
 
+    let _guard = CrashGuard(gecko);
+
     // Do the actual duo
     match duo_read(&driver, &config).await {
-        Ok(_) => {},
-        Err(e) => {eprintln!("{}", e)},
+        Ok(_) => {}
+        Err(e) => {
+            eprintln!("{}", e)
+        }
     };
 
     // Close everything
     driver.quit().await?;
-    gecko.kill().expect("Failed to kill child process");
+    //gecko.kill().expect("Failed to kill child process");
 
     Ok(())
 }
@@ -206,6 +224,56 @@ async fn duo_read(driver: &WebDriver, config: &Config) -> WebDriverResult<()> {
     Ok(())
 }
 
+#[allow(dead_code)]
+async fn nav_to_lang(driver: &WebDriver, config: &Config, lang_full_name: &str) -> WebDriverResult<()> {
+    let secret_key = "jwt_token";
+    let secret_value = &config.jwt;
+
+    driver.goto("https://duolingo.com/learn").await?;
+    driver
+        .add_cookie(Cookie::new(secret_key, secret_value))
+        .await?;
+
+    driver.refresh().await?;
+    driver.goto("https://www.duolingo.com/practice-hub").await?;
+    driver.enter_default_frame().await?;
+
+    sleep(Duration::from_secs(5)).await;
+
+    let lang_select = driver.find(By::Css("._3TvKV")).await?;
+    driver.action_chain().move_to_element_center(&lang_select).perform().await?;
+
+    sleep(Duration::from_secs(1)).await;
+
+    let lang_dropdown_buttons = lang_select.find_all(By::ClassName("_3oF3u")).await?;
+    let mut success = false;
+    for button in &lang_dropdown_buttons {
+        let text = button.text().await?.to_lowercase();
+        if text == lang_full_name.to_lowercase() {
+            println!("Found element");
+            button.click().await?;
+            success = true;
+            sleep(Duration::from_secs(2)).await;
+            break;
+        }
+    }
+
+    if !success {
+        let mut texts = vec![];
+        for canditate in &lang_dropdown_buttons {
+            let text = canditate.text().await.unwrap_or("NONE".to_string());
+            texts.push(text);
+        }
+        let err_txt = format!("Could not find match for {} in {:?}", &lang_full_name, texts);
+        return Err(WebDriverError::FatalError(err_txt))
+    }
+
+    sleep(Duration::from_secs(5)).await;
+    driver.action_chain().reset_actions().await?;
+
+    Ok(())
+}
+
 async fn query_and_click_set(
     driver: &WebDriver,
     text_dict: &HashMap<String, Vec<String>>,
@@ -321,8 +389,12 @@ async fn get_match_multi(
     for fallback in &config.fallbacks {
         // Check if this fallback is exclusive to a language
         match &fallback.lang_tag {
-            Some(tag) => if tag != lang_tag {continue;},
-            None => {},
+            Some(tag) => {
+                if tag != lang_tag {
+                    continue;
+                }
+            }
+            None => {}
         }
 
         match get_match_extended(
@@ -367,9 +439,14 @@ async fn get_match_extended(
     match potential_found {
         Some(found) => t = found,
         None => {
-            eprintln!("Did not find tag {} from url {}. {} bytes checked", &start_tag, &frmt, response.as_bytes().len());
-            return Ok(None)
-        }, // Maybe not a valid url, but not necessarily the end
+            eprintln!(
+                "Did not find tag {} from url {}. {} bytes checked",
+                &start_tag,
+                &frmt,
+                response.as_bytes().len()
+            );
+            return Ok(None);
+        } // Maybe not a valid url, but not necessarily the end
     };
 
     let start_byte = t + start_tag.bytes().len();
@@ -392,8 +469,7 @@ async fn get_match_extended(
     let vec: Vec<u8> = tl_content.iter().map(|b| **b).collect();
     let str = std::str::from_utf8(&vec.as_slice()).expect("Could not convert bytes to str");
 
-    let splits =
-    match split_pattern {
+    let splits = match split_pattern {
         Some(patt) => str.split(patt).collect(),
         None => vec![str],
     };
@@ -419,4 +495,115 @@ async fn get_match_extended(
     eprintln!("Splits do not match! jp: {} en: {:?}", search_term, easy);
 
     return Ok(None);
+}
+
+#[cfg(test)]
+mod tests {
+    use serial_test::serial;
+    use super::*;
+
+    const START_DELAY: u64 = 2;
+
+    #[tokio::test]
+    #[serial]
+    async fn test_spanish() {
+        sleep(Duration::from_secs(START_DELAY)).await; // Make sure port is free from any previous runs. Hacky, but fine for tests.
+
+        let config = config::read_config().unwrap();
+        let gecko = Command::new("cmd")
+            .args(&["/C", "start", &config.driver_path])
+            .spawn()
+            .unwrap();
+        let id = gecko.id();
+        println!("Started gecko with PID {}", id);
+
+        let _guard = CrashGuard(gecko);
+
+        // Create the driver
+        let mut caps = DesiredCapabilities::firefox();
+        caps.set_firefox_binary(&config.firefox_exe_path).unwrap();
+        let driver = WebDriver::new("http://localhost:4444", caps)
+            .await
+            .expect("Failed to create driver");
+
+        nav_to_lang(&driver, &config, "Spanish").await.unwrap();
+
+        // Do the actual duo
+        match duo_read(&driver, &config).await {
+            Ok(_) => {}
+            Err(e) => {
+                eprintln!("{}", e)
+            }
+        };
+
+        // Close everything
+        driver.quit().await.expect("Failed to kill driver");
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_japanese() {
+        sleep(Duration::from_secs(START_DELAY)).await;
+
+        let config = config::read_config().unwrap();
+        let gecko = Command::new("cmd")
+            .args(&["/C", "start", &config.driver_path])
+            .spawn()
+            .unwrap();
+        let id = gecko.id();
+        println!("Started gecko with PID {}", id);
+
+        let _guard = CrashGuard(gecko);
+
+        // Create the driver
+        let mut caps = DesiredCapabilities::firefox();
+        caps.set_firefox_binary(&config.firefox_exe_path).unwrap();
+        let driver = WebDriver::new("http://localhost:4444", caps)
+            .await
+            .expect("Failed to create driver");
+
+        nav_to_lang(&driver, &config, "Japanese").await.unwrap();
+
+        // Do the actual duo
+        match duo_read(&driver, &config).await {
+            Ok(_) => {}
+            Err(e) => {
+                eprintln!("{}", e)
+            }
+        };
+
+        // Close everything
+        driver.quit().await.expect("Failed to kill driver");
+        //gecko.kill().expect("Failed to kill child process");
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn change_language_test(){
+        sleep(Duration::from_secs(START_DELAY)).await;
+
+        let config = config::read_config().unwrap();
+        let gecko = Command::new("cmd")
+            .args(&["/C", "start", &config.driver_path])
+            .spawn()
+            .unwrap();
+        let id = gecko.id();
+        println!("Started gecko with PID {}", id);
+
+        let _guard = CrashGuard(gecko);
+
+        // Create the driver
+        let mut caps = DesiredCapabilities::firefox();
+        caps.set_firefox_binary(&config.firefox_exe_path).unwrap();
+        let driver = WebDriver::new("http://localhost:4444", caps)
+            .await
+            .expect("Failed to create driver");
+
+        nav_to_lang(&driver, &config, "Spanish").await.unwrap();
+        nav_to_lang(&driver, &config, "Japanese").await.unwrap();
+
+        // Close everything
+        driver.quit().await.expect("Failed to kill driver");
+        //gecko.kill().expect("Failed to kill child process");
+    }
 }
