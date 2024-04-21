@@ -10,6 +10,7 @@ use std::{
 };
 use thirtyfour::{prelude::*, support::sleep};
 mod config;
+mod tests;
 
 struct CrashGuard(Child);
 
@@ -55,7 +56,6 @@ async fn main() -> WebDriverResult<()> {
 
     // Close everything
     driver.quit().await?;
-    //gecko.kill().expect("Failed to kill child process");
 
     Ok(())
 }
@@ -148,7 +148,7 @@ async fn duo_read(driver: &WebDriver, config: &Config) -> WebDriverResult<()> {
     cant_listen.click().await?;
 
     // Click continue onto next matches
-    sleep(Duration::from_secs(2)).await;
+    sleep(Duration::from_secs(1)).await;
     let cont_again = driver.find(By::Css("._30qMV")).await?;
     cont_again.click().await?;
 
@@ -156,8 +156,9 @@ async fn duo_read(driver: &WebDriver, config: &Config) -> WebDriverResult<()> {
 
     let mut tries = 0;
     let max_tries = 20;
+
     loop {
-        let finished_footer = driver.find(By::Css("._1lmr-")).await;
+        let correct_q = driver.find(By::Css("._1BBhb")).await.is_ok();
 
         if tries > max_tries {
             return Err(WebDriverError::FatalError(
@@ -165,23 +166,22 @@ async fn duo_read(driver: &WebDriver, config: &Config) -> WebDriverResult<()> {
             ));
         }
 
-        match finished_footer {
-            Ok(_) => {
-                // ._33Jbm check answers button
-                let check = driver.find(By::Css("._33Jbm")).await?;
-                check.click().await?;
+        if correct_q {
+            // ._33Jbm check answers button
+            let check = driver.find(By::Css("._33Jbm")).await?;
+            check.click().await?;
 
-                println!("Found continue button. Assuming done.");
-                sleep(Duration::from_secs(1)).await;
-                let cont = driver.find(By::Css("._30qMV")).await?;
-                cont.click().await?;
-                break;
-            }
-            Err(_) => {
-                // Long delay here, as the answers regenerate slowly sometimes
-                query_and_click_set(&driver, &text_dict, 8, config).await?;
-                tries += 1;
-            }
+            println!("Found continue button. Assuming done.");
+            sleep(Duration::from_secs(1)).await;
+            let cont = driver.find(By::Css("._30qMV")).await?;
+            cont.click().await?;
+            break;
+        } else {
+            // Long delay here, as the answers regenerate slowly sometimes
+            // TODO: broke this lol. try a run with empty txt to smooth out runs
+            // Also romajidesu gives weird output...
+            query_and_click_set(&driver, &text_dict, 0, config).await?;
+            tries += 1;
         }
     }
 
@@ -282,7 +282,7 @@ async fn nav_to_lang(
         return Err(WebDriverError::FatalError(err_txt));
     }
 
-    sleep(Duration::from_secs(5)).await;
+    sleep(Duration::from_secs(3)).await;
     driver.action_chain().reset_actions().await?;
 
     Ok(())
@@ -301,7 +301,9 @@ async fn query_and_click_set(
     let mut buttons_en = vec![];
     let mut buttons_jp = vec![];
 
-    let query = driver.query(By::ClassName("notranslate"));
+    let query = driver
+        .query(By::ClassName("notranslate"))
+        .with_attribute("aria-disabled", "false");
     let mut lang_tag = String::new();
 
     for q in query.any().await? {
@@ -333,7 +335,7 @@ async fn query_and_click_set(
         }
     }
 
-    assert_eq!(english.len(), japanese.len());
+    //assert_eq!(english.len(), japanese.len());
 
     for jp_tl in &japanese {
         let res = get_match_multi(&jp_tl, &english, &text_dict, &config, &lang_tag).await?;
@@ -358,16 +360,21 @@ async fn query_and_click_set(
                 sleep(Duration::from_millis(200)).await;
             }
             None => {
-                let fmt = format!("Found no matches for {}! Cannot continue!", &jp_tl);
-                return Err(WebDriverError::FatalError(fmt.to_string()));
+                eprintln!("Found no matches for {}!", &jp_tl);
+                continue;
             }
         }
     }
 
-    // Wait for new answers to regenerate
-    sleep(Duration::from_secs(end_delay_seconds)).await;
-
-    Ok(())
+    if japanese.len() == 0 {
+        println!("Found no results, trying again.");
+        return Ok(());
+    } else {
+        // Wait for new answers to regenerate
+        println!("Waiting for new batch of pairs ({}sec)", end_delay_seconds);
+        sleep(Duration::from_secs(end_delay_seconds)).await;
+        return Ok(());
+    }
 }
 
 async fn get_match_multi(
@@ -469,24 +476,6 @@ async fn get_match_extended(
     let mut byte_index = start_byte;
 
     loop {
-
-        // Read until closing tag
-        /*
-        let mut tl_content = vec![];
-        loop {
-            let byte = as_bytes.get(byte_index).unwrap();
-            if *byte == '<' as u8 {
-                break;
-            }
-
-            tl_content.push(byte);
-            byte_index += 1;
-        }
-         */
-
-        //let vec: Vec<u8> = tl_content.iter().map(|b| **b).collect();
-        //let str = std::str::from_utf8(&vec.as_slice()).expect("Could not convert bytes to str");
-
         let end_byte = byte_index + response[start_byte..].find("<").unwrap();
         let slice = &response[byte_index..end_byte];
 
@@ -515,7 +504,10 @@ async fn get_match_extended(
         }
 
         let easy: Vec<&str> = splits.into_iter().map(|s| s).collect();
-        eprintln!("Splits do not match! target: {} en: {:?}", search_term, easy);
+        eprintln!(
+            "Splits do not match! target: {} scraped: {:?} options: {:?}",
+            search_term, easy, en_options
+        );
 
         // In the event of matching tags with garbage data, just call it quits.
         if !all_matches {
@@ -527,121 +519,12 @@ async fn get_match_extended(
         match response[byte_index..].find(start_tag) {
             Some(found_index) => {
                 byte_index = byte_index + found_index + start_tag.bytes().len();
-            },
-            None => {break;},
+            }
+            None => {
+                break;
+            }
         }
     }
 
     return Ok(None);
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use serial_test::serial;
-
-    const START_DELAY: u64 = 2;
-
-    #[tokio::test]
-    #[serial]
-    async fn test_spanish() {
-        sleep(Duration::from_secs(START_DELAY)).await; // Make sure port is free from any previous runs. Hacky, but fine for tests.
-
-        let config = config::read_config().unwrap();
-        let gecko = Command::new("cmd")
-            .args(&["/C", "start", &config.driver_path])
-            .spawn()
-            .unwrap();
-        let id = gecko.id();
-        println!("Started gecko with PID {}", id);
-
-        let _guard = CrashGuard(gecko);
-
-        // Create the driver
-        let mut caps = DesiredCapabilities::firefox();
-        caps.set_firefox_binary(&config.firefox_exe_path).unwrap();
-        let driver = WebDriver::new("http://localhost:4444", caps)
-            .await
-            .expect("Failed to create driver");
-
-        nav_to_lang(&driver, &config, "Spanish").await.unwrap();
-
-        // Do the actual duo
-        match duo_read(&driver, &config).await {
-            Ok(_) => {}
-            Err(e) => {
-                eprintln!("{}", e)
-            }
-        };
-
-        // Close everything
-        driver.quit().await.expect("Failed to kill driver");
-    }
-
-    #[tokio::test]
-    #[serial]
-    async fn test_japanese() {
-        sleep(Duration::from_secs(START_DELAY)).await;
-
-        let config = config::read_config().unwrap();
-        let gecko = Command::new("cmd")
-            .args(&["/C", "start", &config.driver_path])
-            .spawn()
-            .unwrap();
-        let id = gecko.id();
-        println!("Started gecko with PID {}", id);
-
-        let _guard = CrashGuard(gecko);
-
-        // Create the driver
-        let mut caps = DesiredCapabilities::firefox();
-        caps.set_firefox_binary(&config.firefox_exe_path).unwrap();
-        let driver = WebDriver::new("http://localhost:4444", caps)
-            .await
-            .expect("Failed to create driver");
-
-        nav_to_lang(&driver, &config, "Japanese").await.unwrap();
-
-        // Do the actual duo
-        match duo_read(&driver, &config).await {
-            Ok(_) => {}
-            Err(e) => {
-                eprintln!("{}", e)
-            }
-        };
-
-        // Close everything
-        driver.quit().await.expect("Failed to kill driver");
-        //gecko.kill().expect("Failed to kill child process");
-    }
-
-    #[tokio::test]
-    #[serial]
-    async fn change_language_test() {
-        sleep(Duration::from_secs(START_DELAY)).await;
-
-        let config = config::read_config().unwrap();
-        let gecko = Command::new("cmd")
-            .args(&["/C", "start", &config.driver_path])
-            .spawn()
-            .unwrap();
-        let id = gecko.id();
-        println!("Started gecko with PID {}", id);
-
-        let _guard = CrashGuard(gecko);
-
-        // Create the driver
-        let mut caps = DesiredCapabilities::firefox();
-        caps.set_firefox_binary(&config.firefox_exe_path).unwrap();
-        let driver = WebDriver::new("http://localhost:4444", caps)
-            .await
-            .expect("Failed to create driver");
-
-        nav_to_lang(&driver, &config, "Spanish").await.unwrap();
-        nav_to_lang(&driver, &config, "Japanese").await.unwrap();
-
-        // Close everything
-        driver.quit().await.expect("Failed to kill driver");
-        //gecko.kill().expect("Failed to kill child process");
-    }
 }

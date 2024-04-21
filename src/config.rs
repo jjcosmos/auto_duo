@@ -36,10 +36,10 @@ pub fn read_config() -> Option<Config> {
                 lang_tag: Some("ja".to_string()),
             },
             Fallback {
-                base_url: "https://www.romajidesu.com/translator/".to_string(),
-                start_tag: r#"<div class="res_translated" id="res_english">"#.to_string(),
+                base_url: "https://www.lingq.com/en/learn-japanese-online/translate/ja/".to_string(),
+                start_tag: "<span class=\"copy-text\">".to_string(),
                 all_matches: false,
-                separator: None,
+                separator: Some(",".to_string()),
                 lang_tag: Some("ja".to_string()),
             },
         ],
