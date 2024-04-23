@@ -9,6 +9,8 @@ use std::{
     time::Duration,
 };
 use thirtyfour::{prelude::*, support::sleep};
+
+use crate::config::Browser;
 mod config;
 mod tests;
 
@@ -34,15 +36,27 @@ async fn main() -> WebDriverResult<()> {
     let gecko = Command::new("cmd")
         .args(&["/C", "start", &config.driver_path])
         .spawn()
-        .unwrap();
+        .expect(format!("Could not spaw driver proc from {}", &config.driver_path).as_str());
 
     let id = gecko.id();
-    println!("Started gecko with PID {}", id);
+    println!("Started driver with PID {}", id);
 
-    // Create the driver
-    let mut caps = DesiredCapabilities::firefox();
-    caps.set_firefox_binary(&config.firefox_exe_path).unwrap();
-    let driver = WebDriver::new("http://localhost:4444", caps).await?;
+    // Connect to the webdriver
+    let driver = match config.browser {
+        Browser::Firefox => {
+            let mut caps = DesiredCapabilities::firefox();
+            if config.headless {caps.set_headless().unwrap();}
+            caps.set_firefox_binary(&config.firefox_exe_path).unwrap();
+            WebDriver::new("http://localhost:4444", caps).await?
+        },
+        Browser::Chrome => {
+            let mut caps = DesiredCapabilities::chrome();
+            if config.headless {caps.set_headless().unwrap();}
+            caps.set_binary(&config.firefox_exe_path).unwrap();
+            WebDriver::new("http://localhost:9515", caps).await?
+
+        },
+    };
 
     let _guard = CrashGuard(gecko);
 
@@ -131,34 +145,47 @@ async fn duo_read(driver: &WebDriver, config: &Config) -> WebDriverResult<()> {
     sleep(Duration::from_secs(5)).await; // TODO: Better wait
 
     driver.enter_default_frame().await?;
-    let elem = driver.find(By::Css("._30qMV")).await?;
-    elem.click().await?;
+    let mut button_confirm = driver
+        .query(By::Tag("button"))
+        .with_attribute("data-test", "player-next")
+        .first()
+        .await?;
+    button_confirm.click().await?;
 
     sleep(Duration::from_secs(1)).await;
 
     query_and_click_set(&driver, &text_dict, 2, config).await?;
 
     // Click confirm
-    let elem_cont = driver.find(By::Css("._30qMV")).await?;
-    elem_cont.click().await?;
+    button_confirm.click().await?;
 
     // Click the can't listen button
     sleep(Duration::from_secs(2)).await;
-    let cant_listen = driver.find(By::Css(".rzju1")).await?;
+    let cant_listen = driver
+        .query(By::Tag("button"))
+        .with_attribute("data-test", "player-skip")
+        .first()
+        .await?;
     cant_listen.click().await?;
 
     // Click continue onto next matches
     sleep(Duration::from_secs(1)).await;
-    let cont_again = driver.find(By::Css("._30qMV")).await?;
-    cont_again.click().await?;
+    button_confirm.click().await?;
 
     sleep(Duration::from_secs(2)).await;
 
     let mut tries = 0;
-    let max_tries = 20;
+    let max_tries = 30;
+
+    //let footer = driver.find(By::Id("session/PlayerFooter")).await?;
 
     loop {
-        let correct_q = driver.find(By::Css("._1BBhb")).await.is_ok();
+        //let correct_q = driver.find(By::Css("._1BBhb")).await.is_ok();
+        let correct_q = button_confirm
+            .attr("aria-disabled")
+            .await?
+            .unwrap_or_default()
+            == "false";
 
         if tries > max_tries {
             return Err(WebDriverError::FatalError(
@@ -167,14 +194,20 @@ async fn duo_read(driver: &WebDriver, config: &Config) -> WebDriverResult<()> {
         }
 
         if correct_q {
-            // ._33Jbm check answers button
-            let check = driver.find(By::Css("._33Jbm")).await?;
-            check.click().await?;
-
             println!("Found continue button. Assuming done.");
             sleep(Duration::from_secs(1)).await;
-            let cont = driver.find(By::Css("._30qMV")).await?;
-            cont.click().await?;
+            if !button_confirm.is_present().await? {
+                button_confirm = driver
+                    .query(By::Tag("button"))
+                    .with_attribute("data-test", "player-next")
+                    .first()
+                    .await?;
+            }
+            println!(
+                "Clicking {}...",
+                button_confirm.text().await.unwrap_or("NONE".to_owned())
+            );
+            button_confirm.click().await?;
             break;
         } else {
             // Long delay here, as the answers regenerate slowly sometimes
@@ -186,39 +219,43 @@ async fn duo_read(driver: &WebDriver, config: &Config) -> WebDriverResult<()> {
     }
 
     sleep(Duration::from_secs(2)).await;
-    let cont = driver.find(By::Css("._30qMV")).await?;
-    cont.click().await?;
-
-    // Try sending a gift if it is there, don't care if not
-    // The "next" button stays the same, so spam that
-    sleep(Duration::from_secs(1)).await;
-    let send_gift = driver.find(By::Css("._30qMV")).await;
-
-    match send_gift {
-        Ok(res) => {
-            res.click().await?;
-            sleep(Duration::from_secs(1)).await;
-
-            let conf_send = driver.find(By::Css("._30qMV")).await;
-            match conf_send {
-                Ok(conf_send_button) => {
-                    conf_send_button.click().await?;
-                    sleep(Duration::from_secs(1)).await;
-                }
-                Err(_) => {}
-            }
-        }
-        Err(_) => {}
+    if !button_confirm.is_present().await? {
+        button_confirm = driver
+            .query(By::Tag("button"))
+            .with_attribute("data-test", "player-next")
+            .first()
+            .await?;
     }
 
-    // Try just continuing if not
-    match driver.find(By::Css("._30qMV")).await {
-        Ok(button) => {
-            button.click().await?;
-            sleep(Duration::from_millis(500)).await;
+    println!(
+        "Clicking {}...",
+        button_confirm.text().await.unwrap_or("NONE".to_owned())
+    );
+    button_confirm.click().await?;
+
+    sleep(Duration::from_secs(1)).await;
+
+    // Spam confirm button
+    loop {
+        if driver.current_url().await?.to_string().ends_with("words") {
+            // Made it back home, stop spamming
+            break;
         }
-        // Might have already handled accidentally in the gift section, don't care if this fails
-        Err(_) => {}
+
+        if !button_confirm.is_present().await? {
+            button_confirm = driver
+                .query(By::Tag("button"))
+                .with_attribute("data-test", "player-next")
+                .first()
+                .await?;
+        }
+
+        println!(
+            "Clicking {}...",
+            button_confirm.text().await.unwrap_or("NONE".to_owned())
+        );
+        button_confirm.click().await?;
+        sleep(Duration::from_secs(1)).await;
     }
 
     println!("Done! Shutting down...");
